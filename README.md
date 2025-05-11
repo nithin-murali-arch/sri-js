@@ -66,7 +66,7 @@ const sriMap = await generator.generateForDirectory('./dist', ['.js', '.css']);
 <script>
 window.SRI = {
   config: {
-    // This should match the sriMap generated on the server
+    // This should match the sriMap generated while building
     'script1.js': 'sha384-abc123...',
     'script2.js': 'sha384-def456...',
     'styles.css': 'sha384-ghi789...'
