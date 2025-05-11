@@ -1,6 +1,6 @@
 {
-  "name": "sri-js",
-  "version": "1.0.0",
+  "name": "@nithin93/sri-js",
+  "version": "1.0.1",
   "description": "A library for Sub Resource Integrity hash generation and management",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

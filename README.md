@@ -1,6 +1,5 @@
-[![npm version](https://img.shields.io/npm/v/sri-js.svg)](https://www.npmjs.com/package/sri-js)
+[![npm version](https://img.shields.io/npm/v/@nithin93/sri-js.svg)](https://www.npmjs.com/package/@nithin93/sri-js)
 [![Build Status](https://github.com/nithin-murali-arch/sri-js/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nithin-murali-arch/sri-js/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/nithin-murali-arch/sri-js/branch/main/graph/badge.svg)](https://codecov.io/gh/nithin-murali-arch/sri-js)
 
 # SRI-JS
 
@@ -149,22 +148,6 @@ The client script automatically initializes when `window.SRI.config` is present.
 - Process all existing script tags
 - Watch for new script tags using MutationObserver
 - Add integrity and crossorigin attributes to matching scripts
-
-## Security Best Practices
-
-1. **Always use HTTPS**: SRI is most effective when combined with HTTPS
-2. **Keep hashes up to date**: Regenerate hashes whenever your assets change
-3. **Use strong algorithms**: Prefer `sha384` or `sha512` over `sha256`
-4. **Monitor for failures**: Set up monitoring for SRI validation failures
-5. **Regular audits**: Include SRI in your security audit process
-
-## PCI DSS Compliance
-
-This library helps meet several PCI DSS requirements:
-
-- **Requirement 6.5.8**: Addressing all known vulnerabilities
-- **Requirement 6.6**: Public-facing web applications
-- **Requirement 12.6**: Security monitoring and testing
 
 ## Development
 
