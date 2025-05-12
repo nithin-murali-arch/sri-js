@@ -93,9 +93,15 @@ const sriMap = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), 'dist', 'sri-map.json'), 'utf-8')
 );
 
+// Copy the client script to your public directory
+fs.copyFileSync(
+  path.join(process.cwd(), 'node_modules/@nithin93/sri-js/dist/sri-client.js'),
+  path.join(process.cwd(), 'public/sri-client.js')
+);
+
 // Inject into your HTML
 const sriScript = `<script>window.SRI = { config: ${JSON.stringify(sriMap)} };</script>`;
-const clientScript = '<script src="/sri-js-client.js"></script>';
+const clientScript = '<script src="/sri-client.js"></script>';
 
 // Add these scripts to your HTML before any other scripts
 ```
@@ -105,6 +111,7 @@ const clientScript = '<script src="/sri-js-client.js"></script>';
 If you're using a static site generator or plain HTML, you can inline the SRI map directly:
 
 ```html
+<!-- Add these scripts before any other scripts in your HTML -->
 <script>
 window.SRI = {
   config: {
@@ -115,7 +122,7 @@ window.SRI = {
   }
 };
 </script>
-<script src="/sri-js-client.js"></script>
+<script src="/sri-client.js"></script>
 ```
 
 ## How It Works

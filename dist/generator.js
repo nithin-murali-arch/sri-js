@@ -39,6 +39,7 @@ class SRIGenerator {
     }
     async findFiles(dirPath, extensions) {
         const files = [];
+        const basePath = this.options.basePath || process.cwd();
         async function scan(directory) {
             const entries = await (0, promises_1.readdir)(directory, { withFileTypes: true });
             for (const entry of entries) {
@@ -47,7 +48,7 @@ class SRIGenerator {
                     await scan(fullPath);
                 }
                 else if (entry.isFile() && extensions.includes((0, node_path_1.extname)(entry.name))) {
-                    files.push((0, node_path_1.relative)(process.cwd(), fullPath));
+                    files.push((0, node_path_1.relative)(basePath, fullPath));
                 }
             }
         }
