@@ -14,15 +14,6 @@ interface SRIWindow extends Window {
   };
 }
 
-// Extend the global Window interface
-declare global {
-  interface Window {
-    SRI?: {
-      config: SRIConfig;
-    };
-  }
-}
-
 /**
  * Adds integrity attributes to dynamically loaded scripts based on configuration.
  * This function:
@@ -32,7 +23,7 @@ declare global {
  *
  * @param config - A map of filenames to their SRI hashes
  */
-export function enforceScriptIntegrity(config: SRIConfig): void {
+function enforceScriptIntegrity(config: SRIConfig): void {
   if (typeof window === "undefined") return;
 
   const observer = new MutationObserver((mutations) => {
@@ -76,7 +67,7 @@ export function enforceScriptIntegrity(config: SRIConfig): void {
 
 // Initialize if configuration is available
 if (typeof window !== "undefined") {
-  if (window.SRI?.config) {
-    enforceScriptIntegrity(window.SRI.config);
+  if ((window as SRIWindow).SRI?.config) {
+    enforceScriptIntegrity((window as SRIWindow).SRI!.config);
   }
 }

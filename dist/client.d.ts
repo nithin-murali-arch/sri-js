@@ -4,12 +4,13 @@
 interface SRIConfig {
     [filename: string]: string;
 }
-declare global {
-    interface Window {
-        SRI?: {
-            config: SRIConfig;
-        };
-    }
+/**
+ * Extended Window interface that includes SRI configuration
+ */
+interface SRIWindow extends Window {
+    SRI?: {
+        config: SRIConfig;
+    };
 }
 /**
  * Adds integrity attributes to dynamically loaded scripts based on configuration.
@@ -20,5 +21,4 @@ declare global {
  *
  * @param config - A map of filenames to their SRI hashes
  */
-export declare function enforceScriptIntegrity(config: SRIConfig): void;
-export {};
+declare function enforceScriptIntegrity(config: SRIConfig): void;

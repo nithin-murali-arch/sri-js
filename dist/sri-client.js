@@ -1,4 +1,5 @@
 (function() {
+"use strict";
 var _a;
 /**
  * Adds integrity attributes to dynamically loaded scripts based on configuration.
@@ -9,7 +10,7 @@ var _a;
  *
  * @param config - A map of filenames to their SRI hashes
  */
-export function enforceScriptIntegrity(config) {
+function enforceScriptIntegrity(config) {
     if (typeof window === "undefined")
         return;
     const observer = new MutationObserver((mutations) => {
