@@ -1,9 +1,67 @@
-import { SRIEnforcer } from '../src/client';
+import { enforceScriptIntegrity } from "../src/client";
 
-describe('SRIEnforcer', () => {
+/**
+ * Extended Window interface that includes SRI configuration
+ */
+interface SRIWindow extends Window {
+  SRI?: {
+    config: Record<string, string>;
+  };
+}
+
+/**
+ * Test suite for the SRI client functionality
+ */
+describe("SRI Client", () => {
   let mockDocument: Document;
   let mockObserver: MutationObserver;
   let mockCallback: (mutations: MutationRecord[]) => void;
+
+  /**
+   * Helper function to create a mock NodeList
+   */
+  const createMockNodeList = (nodes: Node[]): NodeList =>
+    ({
+      length: nodes.length,
+      item: (index: number) => nodes[index] || null,
+      forEach: (callback: (node: Node) => void) => nodes.forEach(callback),
+      entries: () => [][Symbol.iterator](),
+      keys: () => [][Symbol.iterator](),
+      values: () => [][Symbol.iterator](),
+      [Symbol.iterator]: function* () {
+        yield* nodes;
+      },
+    }) as unknown as NodeList;
+
+  /**
+   * Helper function to create a mock script element
+   */
+  const createMockScript = (
+    src: string | null,
+    hasIntegrity = false,
+  ): HTMLScriptElement =>
+    ({
+      nodeName: "SCRIPT",
+      getAttribute: jest.fn().mockReturnValue(src),
+      setAttribute: jest.fn(),
+      hasAttribute: jest.fn().mockReturnValue(hasIntegrity),
+    }) as unknown as HTMLScriptElement;
+
+  /**
+   * Helper function to create a mock mutation record
+   */
+  const createMockMutation = (addedNodes: NodeList): MutationRecord =>
+    ({
+      type: "childList",
+      addedNodes,
+      removedNodes: createMockNodeList([]),
+      target: document.documentElement,
+      attributeName: null,
+      attributeNamespace: null,
+      nextSibling: null,
+      previousSibling: null,
+      oldValue: null,
+    }) as MutationRecord;
 
   beforeEach(() => {
     // Mock MutationObserver
@@ -11,7 +69,7 @@ describe('SRIEnforcer', () => {
     mockObserver = {
       observe: jest.fn(),
       disconnect: jest.fn(),
-      takeRecords: jest.fn()
+      takeRecords: jest.fn(),
     };
     global.MutationObserver = jest.fn().mockImplementation((callback) => {
       mockCallback = callback;
@@ -22,15 +80,15 @@ describe('SRIEnforcer', () => {
     mockDocument = {
       documentElement: {
         appendChild: jest.fn(),
-        removeChild: jest.fn()
+        removeChild: jest.fn(),
       },
-      getElementsByTagName: jest.fn().mockReturnValue([]),
+      querySelectorAll: jest.fn().mockReturnValue([]),
       createElement: jest.fn().mockImplementation((tagName) => ({
         tagName: tagName.toUpperCase(),
         setAttribute: jest.fn(),
         getAttribute: jest.fn(),
-        hasAttribute: jest.fn()
-      }))
+        hasAttribute: jest.fn(),
+      })),
     } as unknown as Document;
 
     // Mock window
@@ -38,305 +96,94 @@ describe('SRIEnforcer', () => {
     global.window = {
       SRI: {
         config: {
-          'test.js': 'sha384-test-hash'
-        }
-      }
+          "test.js": "sha384-test-hash",
+        },
+      },
     } as unknown as Window & typeof globalThis;
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    // Remove global mocks
+    delete (global as any).window;
+    delete (global as any).document;
   });
 
-  describe('initialization', () => {
-    it('should start observing document when initialized', () => {
-      new SRIEnforcer(window.SRI.config);
-      
+  describe("initialization", () => {
+    it("should start observing document when initialized", () => {
+      // Ensure window.SRI is defined
+      (window as SRIWindow).SRI = {
+        config: {
+          "test.js": "sha384-test-hash",
+        },
+      };
+      enforceScriptIntegrity((window as unknown as SRIWindow).SRI!.config);
+
       expect(mockObserver.observe).toHaveBeenCalledWith(
         document.documentElement,
         {
           childList: true,
-          subtree: true
-        }
+          subtree: true,
+        },
       );
     });
 
-    it('should process existing scripts on initialization', () => {
-      const mockScripts = [
-        {
-          tagName: 'SCRIPT',
-          getAttribute: jest.fn().mockReturnValue('test.js'),
-          setAttribute: jest.fn(),
-          hasAttribute: jest.fn().mockReturnValue(false)
-        }
-      ];
+    it("should process existing scripts on initialization", () => {
+      const mockScripts = [createMockScript("test.js")];
 
-      (document.getElementsByTagName as jest.Mock).mockReturnValue(mockScripts);
+      (document.querySelectorAll as jest.Mock).mockReturnValue(mockScripts);
 
-      new SRIEnforcer(window.SRI.config);
+      enforceScriptIntegrity((window as unknown as SRIWindow).SRI!.config);
 
-      expect(mockScripts[0].setAttribute).toHaveBeenCalledWith('integrity', 'sha384-test-hash');
-      expect(mockScripts[0].setAttribute).toHaveBeenCalledWith('crossorigin', 'anonymous');
+      expect(mockScripts[0].setAttribute).toHaveBeenCalledWith(
+        "integrity",
+        "sha384-test-hash",
+      );
+      expect(mockScripts[0].setAttribute).toHaveBeenCalledWith(
+        "crossorigin",
+        "anonymous",
+      );
     });
   });
 
-  describe('mutation handling', () => {
-    it('should add integrity to new script tags', () => {
-      const enforcer = new SRIEnforcer(window.SRI.config);
-      
-      const mockScript = {
-        tagName: 'SCRIPT',
-        getAttribute: jest.fn().mockReturnValue('test.js'),
-        setAttribute: jest.fn(),
-        hasAttribute: jest.fn().mockReturnValue(false),
-        // Node interface implementation
-        baseURI: '',
-        childNodes: {
-          length: 0,
-          item: () => null,
-          forEach: () => {},
-          entries: () => [][Symbol.iterator](),
-          keys: () => [][Symbol.iterator](),
-          values: () => [][Symbol.iterator](),
-          [Symbol.iterator]: function* () {}
-        } as unknown as NodeList,
-        firstChild: null,
-        isConnected: true,
-        lastChild: null,
-        nextSibling: null,
-        nodeName: 'SCRIPT',
-        nodeType: 1,
-        nodeValue: null,
-        ownerDocument: mockDocument,
-        parentElement: document.documentElement,
-        parentNode: document.documentElement,
-        previousSibling: null,
-        textContent: '',
-        appendChild: jest.fn(),
-        cloneNode: jest.fn(),
-        compareDocumentPosition: jest.fn(),
-        contains: jest.fn(),
-        getRootNode: jest.fn(),
-        hasChildNodes: jest.fn(),
-        insertBefore: jest.fn(),
-        isDefaultNamespace: jest.fn(),
-        isEqualNode: jest.fn(),
-        isSameNode: jest.fn(),
-        lookupNamespaceURI: jest.fn(),
-        lookupPrefix: jest.fn(),
-        normalize: jest.fn(),
-        removeChild: jest.fn(),
-        replaceChild: jest.fn()
-      } as unknown as HTMLScriptElement;
+  describe("mutation handling", () => {
+    it("should add integrity to new script tags", () => {
+      enforceScriptIntegrity((window as unknown as SRIWindow).SRI!.config);
 
-      const mockNodeList = {
-        length: 1,
-        item: (index: number) => index === 0 ? mockScript : null,
-        forEach: (callback: (node: Node, index: number) => void) => callback(mockScript, 0),
-        entries: () => [[0, mockScript]][Symbol.iterator](),
-        keys: () => [0][Symbol.iterator](),
-        values: () => [mockScript][Symbol.iterator](),
-        [Symbol.iterator]: function* () {
-          yield mockScript;
-        }
-      } as unknown as NodeList;
-
-      const emptyNodeList = {
-        length: 0,
-        item: () => null,
-        forEach: () => {},
-        entries: () => [][Symbol.iterator](),
-        keys: () => [][Symbol.iterator](),
-        values: () => [][Symbol.iterator](),
-        [Symbol.iterator]: function* () {}
-      } as unknown as NodeList;
-
-      const mutation = {
-        type: 'childList',
-        addedNodes: mockNodeList,
-        removedNodes: emptyNodeList,
-        target: document.documentElement,
-        attributeName: null,
-        attributeNamespace: null,
-        nextSibling: null,
-        previousSibling: null,
-        oldValue: null
-      } as MutationRecord;
+      const mockScript = createMockScript("test.js");
+      const mockNodeList = createMockNodeList([mockScript]);
+      const mutation = createMockMutation(mockNodeList);
 
       mockCallback([mutation]);
 
-      expect(mockScript.setAttribute).toHaveBeenCalledWith('integrity', 'sha384-test-hash');
-      expect(mockScript.setAttribute).toHaveBeenCalledWith('crossorigin', 'anonymous');
+      expect(mockScript.setAttribute).toHaveBeenCalledWith(
+        "integrity",
+        "sha384-test-hash",
+      );
+      expect(mockScript.setAttribute).toHaveBeenCalledWith(
+        "crossorigin",
+        "anonymous",
+      );
     });
 
-    it('should not modify scripts without src attribute', () => {
-      const enforcer = new SRIEnforcer(window.SRI.config);
-      
-      const mockScript = {
-        tagName: 'SCRIPT',
-        getAttribute: jest.fn().mockReturnValue(null),
-        setAttribute: jest.fn(),
-        hasAttribute: jest.fn().mockReturnValue(false),
-        // Node interface implementation
-        baseURI: '',
-        childNodes: {
-          length: 0,
-          item: () => null,
-          forEach: () => {},
-          entries: () => [][Symbol.iterator](),
-          keys: () => [][Symbol.iterator](),
-          values: () => [][Symbol.iterator](),
-          [Symbol.iterator]: function* () {}
-        } as unknown as NodeList,
-        firstChild: null,
-        isConnected: true,
-        lastChild: null,
-        nextSibling: null,
-        nodeName: 'SCRIPT',
-        nodeType: 1,
-        nodeValue: null,
-        ownerDocument: mockDocument,
-        parentElement: document.documentElement,
-        parentNode: document.documentElement,
-        previousSibling: null,
-        textContent: '',
-        appendChild: jest.fn(),
-        cloneNode: jest.fn(),
-        compareDocumentPosition: jest.fn(),
-        contains: jest.fn(),
-        getRootNode: jest.fn(),
-        hasChildNodes: jest.fn(),
-        insertBefore: jest.fn(),
-        isDefaultNamespace: jest.fn(),
-        isEqualNode: jest.fn(),
-        isSameNode: jest.fn(),
-        lookupNamespaceURI: jest.fn(),
-        lookupPrefix: jest.fn(),
-        normalize: jest.fn(),
-        removeChild: jest.fn(),
-        replaceChild: jest.fn()
-      } as unknown as HTMLScriptElement;
+    it("should not modify scripts without src attribute", () => {
+      enforceScriptIntegrity((window as unknown as SRIWindow).SRI!.config);
 
-      const mockNodeList = {
-        length: 1,
-        item: (index: number) => index === 0 ? mockScript : null,
-        forEach: (callback: (node: Node, index: number) => void) => callback(mockScript, 0),
-        entries: () => [[0, mockScript]][Symbol.iterator](),
-        keys: () => [0][Symbol.iterator](),
-        values: () => [mockScript][Symbol.iterator](),
-        [Symbol.iterator]: function* () {
-          yield mockScript;
-        }
-      } as unknown as NodeList;
-
-      const emptyNodeList = {
-        length: 0,
-        item: () => null,
-        forEach: () => {},
-        entries: () => [][Symbol.iterator](),
-        keys: () => [][Symbol.iterator](),
-        values: () => [][Symbol.iterator](),
-        [Symbol.iterator]: function* () {}
-      } as unknown as NodeList;
-
-      const mutation = {
-        type: 'childList',
-        addedNodes: mockNodeList,
-        removedNodes: emptyNodeList,
-        target: document.documentElement,
-        attributeName: null,
-        attributeNamespace: null,
-        nextSibling: null,
-        previousSibling: null,
-        oldValue: null
-      } as MutationRecord;
+      const mockScript = createMockScript(null);
+      const mockNodeList = createMockNodeList([mockScript]);
+      const mutation = createMockMutation(mockNodeList);
 
       mockCallback([mutation]);
 
       expect(mockScript.setAttribute).not.toHaveBeenCalled();
     });
 
-    it('should not modify scripts that already have integrity', () => {
-      const enforcer = new SRIEnforcer(window.SRI.config);
-      
-      const mockScript = {
-        tagName: 'SCRIPT',
-        getAttribute: jest.fn().mockReturnValue('test.js'),
-        setAttribute: jest.fn(),
-        hasAttribute: jest.fn().mockReturnValue(true),
-        // Node interface implementation
-        baseURI: '',
-        childNodes: {
-          length: 0,
-          item: () => null,
-          forEach: () => {},
-          entries: () => [][Symbol.iterator](),
-          keys: () => [][Symbol.iterator](),
-          values: () => [][Symbol.iterator](),
-          [Symbol.iterator]: function* () {}
-        } as unknown as NodeList,
-        firstChild: null,
-        isConnected: true,
-        lastChild: null,
-        nextSibling: null,
-        nodeName: 'SCRIPT',
-        nodeType: 1,
-        nodeValue: null,
-        ownerDocument: mockDocument,
-        parentElement: document.documentElement,
-        parentNode: document.documentElement,
-        previousSibling: null,
-        textContent: '',
-        appendChild: jest.fn(),
-        cloneNode: jest.fn(),
-        compareDocumentPosition: jest.fn(),
-        contains: jest.fn(),
-        getRootNode: jest.fn(),
-        hasChildNodes: jest.fn(),
-        insertBefore: jest.fn(),
-        isDefaultNamespace: jest.fn(),
-        isEqualNode: jest.fn(),
-        isSameNode: jest.fn(),
-        lookupNamespaceURI: jest.fn(),
-        lookupPrefix: jest.fn(),
-        normalize: jest.fn(),
-        removeChild: jest.fn(),
-        replaceChild: jest.fn()
-      } as unknown as HTMLScriptElement;
+    it("should not modify scripts that already have integrity", () => {
+      enforceScriptIntegrity((window as unknown as SRIWindow).SRI!.config);
 
-      const mockNodeList = {
-        length: 1,
-        item: (index: number) => index === 0 ? mockScript : null,
-        forEach: (callback: (node: Node, index: number) => void) => callback(mockScript, 0),
-        entries: () => [[0, mockScript]][Symbol.iterator](),
-        keys: () => [0][Symbol.iterator](),
-        values: () => [mockScript][Symbol.iterator](),
-        [Symbol.iterator]: function* () {
-          yield mockScript;
-        }
-      } as unknown as NodeList;
-
-      const emptyNodeList = {
-        length: 0,
-        item: () => null,
-        forEach: () => {},
-        entries: () => [][Symbol.iterator](),
-        keys: () => [][Symbol.iterator](),
-        values: () => [][Symbol.iterator](),
-        [Symbol.iterator]: function* () {}
-      } as unknown as NodeList;
-
-      const mutation = {
-        type: 'childList',
-        addedNodes: mockNodeList,
-        removedNodes: emptyNodeList,
-        target: document.documentElement,
-        attributeName: null,
-        attributeNamespace: null,
-        nextSibling: null,
-        previousSibling: null,
-        oldValue: null
-      } as MutationRecord;
+      const mockScript = createMockScript("test.js", true);
+      const mockNodeList = createMockNodeList([mockScript]);
+      const mutation = createMockMutation(mockNodeList);
 
       mockCallback([mutation]);
 
@@ -344,179 +191,36 @@ describe('SRIEnforcer', () => {
     });
   });
 
-  describe('script processing', () => {
-    it('should extract filename from full path', () => {
-      const enforcer = new SRIEnforcer(window.SRI.config);
-      
-      const mockScript = {
-        tagName: 'SCRIPT',
-        getAttribute: jest.fn().mockReturnValue('/path/to/test.js'),
-        setAttribute: jest.fn(),
-        hasAttribute: jest.fn().mockReturnValue(false),
-        // Node interface implementation
-        baseURI: '',
-        childNodes: {
-          length: 0,
-          item: () => null,
-          forEach: () => {},
-          entries: () => [][Symbol.iterator](),
-          keys: () => [][Symbol.iterator](),
-          values: () => [][Symbol.iterator](),
-          [Symbol.iterator]: function* () {}
-        } as unknown as NodeList,
-        firstChild: null,
-        isConnected: true,
-        lastChild: null,
-        nextSibling: null,
-        nodeName: 'SCRIPT',
-        nodeType: 1,
-        nodeValue: null,
-        ownerDocument: mockDocument,
-        parentElement: document.documentElement,
-        parentNode: document.documentElement,
-        previousSibling: null,
-        textContent: '',
-        appendChild: jest.fn(),
-        cloneNode: jest.fn(),
-        compareDocumentPosition: jest.fn(),
-        contains: jest.fn(),
-        getRootNode: jest.fn(),
-        hasChildNodes: jest.fn(),
-        insertBefore: jest.fn(),
-        isDefaultNamespace: jest.fn(),
-        isEqualNode: jest.fn(),
-        isSameNode: jest.fn(),
-        lookupNamespaceURI: jest.fn(),
-        lookupPrefix: jest.fn(),
-        normalize: jest.fn(),
-        removeChild: jest.fn(),
-        replaceChild: jest.fn()
-      } as unknown as HTMLScriptElement;
+  describe("script processing", () => {
+    it("should extract filename from full path", () => {
+      enforceScriptIntegrity((window as unknown as SRIWindow).SRI!.config);
 
-      const mockNodeList = {
-        length: 1,
-        item: (index: number) => index === 0 ? mockScript : null,
-        forEach: (callback: (node: Node, index: number) => void) => callback(mockScript, 0),
-        entries: () => [[0, mockScript]][Symbol.iterator](),
-        keys: () => [0][Symbol.iterator](),
-        values: () => [mockScript][Symbol.iterator](),
-        [Symbol.iterator]: function* () {
-          yield mockScript;
-        }
-      } as unknown as NodeList;
-
-      const emptyNodeList = {
-        length: 0,
-        item: () => null,
-        forEach: () => {},
-        entries: () => [][Symbol.iterator](),
-        keys: () => [][Symbol.iterator](),
-        values: () => [][Symbol.iterator](),
-        [Symbol.iterator]: function* () {}
-      } as unknown as NodeList;
-
-      const mutation = {
-        type: 'childList',
-        addedNodes: mockNodeList,
-        removedNodes: emptyNodeList,
-        target: document.documentElement,
-        attributeName: null,
-        attributeNamespace: null,
-        nextSibling: null,
-        previousSibling: null,
-        oldValue: null
-      } as MutationRecord;
+      const mockScript = createMockScript("/path/to/test.js");
+      const mockNodeList = createMockNodeList([mockScript]);
+      const mutation = createMockMutation(mockNodeList);
 
       mockCallback([mutation]);
 
-      expect(mockScript.setAttribute).toHaveBeenCalledWith('integrity', 'sha384-test-hash');
+      expect(mockScript.setAttribute).toHaveBeenCalledWith(
+        "integrity",
+        "sha384-test-hash",
+      );
+      expect(mockScript.setAttribute).toHaveBeenCalledWith(
+        "crossorigin",
+        "anonymous",
+      );
     });
 
-    it('should handle scripts with no matching hash', () => {
-      const enforcer = new SRIEnforcer(window.SRI.config);
-      
-      const mockScript = {
-        tagName: 'SCRIPT',
-        getAttribute: jest.fn().mockReturnValue('unknown.js'),
-        setAttribute: jest.fn(),
-        hasAttribute: jest.fn().mockReturnValue(false),
-        // Node interface implementation
-        baseURI: '',
-        childNodes: {
-          length: 0,
-          item: () => null,
-          forEach: () => {},
-          entries: () => [][Symbol.iterator](),
-          keys: () => [][Symbol.iterator](),
-          values: () => [][Symbol.iterator](),
-          [Symbol.iterator]: function* () {}
-        } as unknown as NodeList,
-        firstChild: null,
-        isConnected: true,
-        lastChild: null,
-        nextSibling: null,
-        nodeName: 'SCRIPT',
-        nodeType: 1,
-        nodeValue: null,
-        ownerDocument: mockDocument,
-        parentElement: document.documentElement,
-        parentNode: document.documentElement,
-        previousSibling: null,
-        textContent: '',
-        appendChild: jest.fn(),
-        cloneNode: jest.fn(),
-        compareDocumentPosition: jest.fn(),
-        contains: jest.fn(),
-        getRootNode: jest.fn(),
-        hasChildNodes: jest.fn(),
-        insertBefore: jest.fn(),
-        isDefaultNamespace: jest.fn(),
-        isEqualNode: jest.fn(),
-        isSameNode: jest.fn(),
-        lookupNamespaceURI: jest.fn(),
-        lookupPrefix: jest.fn(),
-        normalize: jest.fn(),
-        removeChild: jest.fn(),
-        replaceChild: jest.fn()
-      } as unknown as HTMLScriptElement;
+    it("should handle scripts with no matching hash", () => {
+      enforceScriptIntegrity((window as unknown as SRIWindow).SRI!.config);
 
-      const mockNodeList = {
-        length: 1,
-        item: (index: number) => index === 0 ? mockScript : null,
-        forEach: (callback: (node: Node, index: number) => void) => callback(mockScript, 0),
-        entries: () => [[0, mockScript]][Symbol.iterator](),
-        keys: () => [0][Symbol.iterator](),
-        values: () => [mockScript][Symbol.iterator](),
-        [Symbol.iterator]: function* () {
-          yield mockScript;
-        }
-      } as unknown as NodeList;
-
-      const emptyNodeList = {
-        length: 0,
-        item: () => null,
-        forEach: () => {},
-        entries: () => [][Symbol.iterator](),
-        keys: () => [][Symbol.iterator](),
-        values: () => [][Symbol.iterator](),
-        [Symbol.iterator]: function* () {}
-      } as unknown as NodeList;
-
-      const mutation = {
-        type: 'childList',
-        addedNodes: mockNodeList,
-        removedNodes: emptyNodeList,
-        target: document.documentElement,
-        attributeName: null,
-        attributeNamespace: null,
-        nextSibling: null,
-        previousSibling: null,
-        oldValue: null
-      } as MutationRecord;
+      const mockScript = createMockScript("unknown.js");
+      const mockNodeList = createMockNodeList([mockScript]);
+      const mutation = createMockMutation(mockNodeList);
 
       mockCallback([mutation]);
 
       expect(mockScript.setAttribute).not.toHaveBeenCalled();
     });
   });
-}); 
+});

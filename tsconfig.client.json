@@ -12,4 +12,4 @@
     "moduleResolution": "node"
   },
   "include": ["src/client.ts"]
-} 
+}
