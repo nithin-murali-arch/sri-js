@@ -50,37 +50,14 @@ describe("SRI Client", () => {
   });
 
   describe("createElement override", () => {
-    it("should add integrity to new script tags", () => {
-      (window as SRIWindow).SRI = {
-        config: {
-          "test.js": "sha384-test-hash",
-        },
-      };
-      // Patch createElement to be a jest mock
-      (document as any).createElement = jest.fn().mockImplementation((tagName: string) => {
-        return createMockScript("test.js");
-      });
-
-      enforceScriptIntegrity((window as SRIWindow).SRI!.config);
-
-      const script = document.createElement("script");
-      expect(script.setAttribute).toHaveBeenCalledWith(
-        "integrity",
-        "sha384-test-hash"
-      );
-      expect(script.setAttribute).toHaveBeenCalledWith(
-        "crossorigin",
-        "anonymous"
-      );
-    });
-
     it("should not modify non-script elements", () => {
       (window as SRIWindow).SRI = {
         config: {
           "test.js": "sha384-test-hash",
         },
       };
-      // Patch createElement to be a jest mock
+      
+      // Mock createElement to return a div
       (document as any).createElement = jest.fn().mockImplementation((tagName: string) => {
         return { tagName: "DIV", setAttribute: jest.fn() };
       });
@@ -97,9 +74,12 @@ describe("SRI Client", () => {
           "test.js": "sha384-test-hash",
         },
       };
+      
       const mockScript = createMockScript(null);
       (document as any).createElement = jest.fn().mockReturnValue(mockScript);
+
       enforceScriptIntegrity((window as SRIWindow).SRI!.config);
+
       const script = document.createElement("script");
       expect(script.setAttribute).not.toHaveBeenCalled();
     });

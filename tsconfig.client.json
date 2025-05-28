@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2015",
-    "module": "none",
+    "module": "ES2020",
     "declaration": false,
     "strict": true,
     "esModuleInterop": true,
@@ -11,5 +11,5 @@
     "outDir": "./dist",
     "moduleResolution": "node"
   },
-  "include": ["src/client.ts"]
+  "include": ["src/client.ts", "src/enforceScriptIntegrity.ts"]
 }

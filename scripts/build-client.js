@@ -1,6 +1,6 @@
-const fs = require("fs");
-const path = require("path");
-const { execSync } = require("child_process");
+const { build } = require('esbuild');
+const path = require('path');
+const fs = require('fs');
 
 // Create the dist directory if it doesn't exist
 const distDir = path.join(__dirname, "../dist");
@@ -8,24 +8,30 @@ if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
 }
 
-// Compile the client script
-console.log("Compiling client script...");
-execSync("npx tsc -p tsconfig.client.json", {
-  stdio: "inherit",
-});
+async function buildClient() {
+  try {
+    console.log('Bundling client script with esbuild...');
+    
+    await build({
+      entryPoints: [path.join(__dirname, '../src/client.ts')],
+      bundle: true,
+      minify: true,
+      format: 'iife',  // Immediately-invoked function expression for browser
+      globalName: 'SRI',
+      outfile: path.join(distDir, 'sri-client.js'),
+      target: ['es2015'],
+      define: { 'process.env.NODE_ENV': '"production"' },
+      tsconfig: path.join(__dirname, '../tsconfig.client.json'),
+      external: ['cheerio'],  // Exclude cheerio as it's not needed in the browser
+      platform: 'browser',
+      logLevel: 'info',
+    });
 
-// Read the compiled client script
-const clientSource = fs.readFileSync(path.join(distDir, "client.js"), "utf-8");
+    console.log('Client script built successfully!');
+  } catch (error) {
+    console.error('Error building client script:', error);
+    process.exit(1);
+  }
+}
 
-// Wrap the code in an IIFE to avoid global scope pollution
-const wrappedCode = `(function() {
-${clientSource}
-})();`;
-
-// Write the client script
-fs.writeFileSync(path.join(distDir, "sri-client.js"), wrappedCode, "utf-8");
-
-// Clean up the intermediate file
-fs.unlinkSync(path.join(distDir, "client.js"));
-
-console.log("Client script built successfully!");
+buildClient();

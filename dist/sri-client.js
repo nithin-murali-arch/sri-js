@@ -1,13 +1,1 @@
-(function() {
-"use strict";
-var _a;
-Object.defineProperty(exports, "__esModule", { value: true });
-const enforceScriptIntegrity_1 = require("./enforceScriptIntegrity");
-// Initialize if configuration is available
-if (typeof window !== "undefined") {
-    if ((_a = window.SRI) === null || _a === void 0 ? void 0 : _a.config) {
-        (0, enforceScriptIntegrity_1.enforceScriptIntegrity)(window.SRI.config);
-    }
-}
-
-})();
+"use strict";var SRI=(()=>{var f=!1;function s(d){if(typeof window=="undefined"||f)return;f=!0;let p=document.createElement;document.createElement=function(i){let n=p.call(document,i);if(i.toLowerCase()==="script"){let e=Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype,"src");e&&e.set&&Object.defineProperty(n,"src",{set:function(r){var c;e.set.call(this,r);let t=r;typeof t!="string"&&t.toString&&(t=t.toString());let a=((c=t==null?void 0:t.split("/"))==null?void 0:c.pop())||"",o=d[a];o&&!this.hasAttribute("integrity")&&(this.setAttribute("integrity",o),this.setAttribute("crossorigin","anonymous"))},get:e.get,configurable:!0})}return n}}var g;typeof window!="undefined"&&(g=window.SRI)!=null&&g.config&&s(window.SRI.config);})();
