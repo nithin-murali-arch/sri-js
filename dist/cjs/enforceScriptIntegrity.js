@@ -1,21 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.enforceScriptIntegrity = enforceScriptIntegrity;
-let alreadyWrapped = false;
+let isWrapped = false;
 /**
- * Adds integrity attributes to dynamically loaded scripts based on configuration.
- * This function overrides the src setter of script elements to add integrity attributes
- * when the src is set.
+ * Enforces Subresource Integrity (SRI) for script elements by adding integrity attributes
+ * based on the provided configuration map.
  *
- * @param config - A map of filenames to their SRI hashes
+ * @param config - A map of script paths to their integrity hashes
+ * @param prefix - Optional path prefix to match against script URLs
  */
-function enforceScriptIntegrity(config) {
-    if (typeof window === "undefined")
+function enforceScriptIntegrity(config, prefix) {
+    if (isWrapped)
         return;
-    if (alreadyWrapped)
-        return;
-    alreadyWrapped = true;
-    // Override the native createElement to intercept script creation
+    isWrapped = true;
     const originalCreateElement = document.createElement;
     document.createElement = function (tagName) {
         const element = originalCreateElement.call(document, tagName);
@@ -28,8 +25,6 @@ function enforceScriptIntegrity(config) {
                 Object.defineProperty(element, 'src', {
                     set: function (value) {
                         var _a;
-                        // Call the original setter
-                        descriptor.set.call(this, value);
                         // Extract filename from the src
                         let url = value;
                         if (typeof url !== 'string' && url.toString) {
@@ -38,10 +33,12 @@ function enforceScriptIntegrity(config) {
                         const filename = ((_a = url === null || url === void 0 ? void 0 : url.split('/')) === null || _a === void 0 ? void 0 : _a.pop()) || '';
                         const integrity = config[filename];
                         // Add integrity and crossorigin attributes if we have a match
-                        if (integrity && !this.hasAttribute('integrity')) {
+                        if ((!prefix || (prefix && (url === null || url === void 0 ? void 0 : url.includes(prefix)))) && integrity && !this.hasAttribute('integrity')) {
                             this.setAttribute('integrity', integrity);
                             this.setAttribute('crossorigin', 'anonymous');
                         }
+                        // Call the original setter
+                        descriptor.set.call(this, value);
                     },
                     get: descriptor.get,
                     configurable: true
