@@ -14,7 +14,7 @@ let alreadyWrapped = false;
  *
  * @param config - A map of filenames to their SRI hashes
  */
-export function enforceScriptIntegrity(config: SRIConfig): void {
+export function enforceScriptIntegrity(config: SRIConfig, pathPrefix: string): void {
   if (typeof window === "undefined") return;
   if (alreadyWrapped) return;
   alreadyWrapped = true;
@@ -45,7 +45,7 @@ export function enforceScriptIntegrity(config: SRIConfig): void {
             const integrity = config[filename];
             
             // Add integrity and crossorigin attributes if we have a match
-            if (integrity && !this.hasAttribute('integrity')) {
+            if ((pathPrefix && url?.includes(pathPrefix)) && integrity && !this.hasAttribute('integrity')) {
               this.setAttribute('integrity', integrity);
               this.setAttribute('crossorigin', 'anonymous');
             }
