@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Create the dist directory if it doesn't exist
-const distDir = path.join(__dirname, "../dist");
+const distDir = path.join(__dirname, "../public");
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
 }

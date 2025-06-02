@@ -1,16 +1,10 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-import { createHash } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
-import { resolve, relative, extname, join, basename } from "node:path";
-export class SRIGenerator {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SRIGenerator = void 0;
+const node_crypto_1 = require("node:crypto");
+const promises_1 = require("node:fs/promises");
+const node_path_1 = require("node:path");
+class SRIGenerator {
     constructor(options) {
         this.options = {
             algorithm: options.algorithm || "sha384",
@@ -18,56 +12,47 @@ export class SRIGenerator {
         };
     }
     generateHash(content) {
-        const hash = createHash(this.options.algorithm);
+        const hash = (0, node_crypto_1.createHash)(this.options.algorithm);
         hash.update(content);
         return `${this.options.algorithm}-${hash.digest("base64")}`;
     }
-    generateForFile(filePath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const absolutePath = resolve(this.options.basePath, filePath);
-            const content = yield readFile(absolutePath);
-            const integrity = this.generateHash(content);
-            return {
-                integrity,
-                path: basename(filePath),
-            };
-        });
+    async generateForFile(filePath) {
+        const absolutePath = (0, node_path_1.resolve)(this.options.basePath, filePath);
+        const content = await (0, promises_1.readFile)(absolutePath);
+        const integrity = this.generateHash(content);
+        return {
+            integrity,
+            path: absolutePath,
+        };
     }
-    generateForFiles(filePaths) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const results = yield Promise.all(filePaths.map((filePath) => this.generateForFile(filePath)));
-            return results.reduce((map, result) => {
-                map[result.path] = result.integrity;
-                return map;
-            }, {});
-        });
+    async generateForFiles(filePaths) {
+        const results = await Promise.all(filePaths.map((filePath) => this.generateForFile(filePath)));
+        return results.reduce((map, result) => {
+            map[result.path] = result.integrity;
+            return map;
+        }, {});
     }
-    generateForDirectory() {
-        return __awaiter(this, arguments, void 0, function* (extensions = [".js"]) {
-            const files = yield this.findFiles(this.options.basePath, extensions);
-            return this.generateForFiles(files);
-        });
+    async generateForDirectory(extensions = [".js"]) {
+        const files = await this.findFiles(this.options.basePath, extensions);
+        return this.generateForFiles(files);
     }
-    findFiles(dirPath, extensions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const files = [];
-            const basePath = this.options.basePath;
-            function scan(directory) {
-                return __awaiter(this, void 0, void 0, function* () {
-                    const entries = yield readdir(directory, { withFileTypes: true });
-                    for (const entry of entries) {
-                        const fullPath = join(directory, entry.name);
-                        if (entry.isDirectory()) {
-                            yield scan(fullPath);
-                        }
-                        else if (entry.isFile() && extensions.includes(extname(entry.name))) {
-                            files.push(relative(basePath, fullPath));
-                        }
-                    }
-                });
+    async findFiles(dirPath, extensions) {
+        const files = [];
+        const basePath = this.options.basePath;
+        async function scan(directory) {
+            const entries = await (0, promises_1.readdir)(directory, { withFileTypes: true });
+            for (const entry of entries) {
+                const fullPath = (0, node_path_1.join)(directory, entry.name);
+                if (entry.isDirectory()) {
+                    await scan(fullPath);
+                }
+                else if (entry.isFile() && extensions.includes((0, node_path_1.extname)(entry.name))) {
+                    files.push((0, node_path_1.relative)(basePath, fullPath));
+                }
             }
-            yield scan(dirPath);
-            return files;
-        });
+        }
+        await scan(dirPath);
+        return files;
     }
 }
+exports.SRIGenerator = SRIGenerator;

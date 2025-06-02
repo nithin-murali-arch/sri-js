@@ -1,3 +1,6 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.enforceScriptIntegrity = enforceScriptIntegrity;
 let isWrapped = false;
 /**
  * Enforces Subresource Integrity (SRI) for script elements by adding integrity attributes
@@ -6,7 +9,7 @@ let isWrapped = false;
  * @param config - A map of script paths to their integrity hashes
  * @param prefix - Optional path prefix to match against script URLs
  */
-export function enforceScriptIntegrity(config, prefix) {
+function enforceScriptIntegrity(config, prefix) {
     if (isWrapped)
         return;
     isWrapped = true;
@@ -21,16 +24,15 @@ export function enforceScriptIntegrity(config, prefix) {
                 // Override the src setter
                 Object.defineProperty(element, 'src', {
                     set: function (value) {
-                        var _a;
                         // Extract filename from the src
                         let url = value;
                         if (typeof url !== 'string' && url.toString) {
                             url = url.toString();
                         }
-                        const filename = ((_a = url === null || url === void 0 ? void 0 : url.split('/')) === null || _a === void 0 ? void 0 : _a.pop()) || '';
+                        const filename = url?.split('/')?.pop() || '';
                         const integrity = config[filename];
                         // Add integrity and crossorigin attributes if we have a match
-                        if ((!prefix || (prefix && (url === null || url === void 0 ? void 0 : url.includes(prefix)))) && integrity && !this.hasAttribute('integrity')) {
+                        if ((!prefix || (prefix && url?.includes(prefix))) && integrity && !this.hasAttribute('integrity')) {
                             this.setAttribute('integrity', integrity);
                             this.setAttribute('crossorigin', 'anonymous');
                         }

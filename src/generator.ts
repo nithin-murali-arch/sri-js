@@ -26,7 +26,7 @@ export class SRIGenerator {
 
     return {
       integrity,
-      path: basename(filePath),
+      path: absolutePath,
     };
   }
 
