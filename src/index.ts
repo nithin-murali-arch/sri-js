@@ -18,7 +18,7 @@ export function generateSRI(options: SRIOptions): SRIGenerator {
  * @returns The updated HTML string.
  */
 export function updateHtmlScripts(html: string, config: SRIConfig, prefix:string): string {
-  return updateHTML(html, config, '');
+  return updateHTML(html, config, prefix);
 }
 
 /**

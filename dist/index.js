@@ -51,7 +51,7 @@ function generateSRI(options) {
  * @returns The updated HTML string.
  */
 function updateHtmlScripts(html, config, prefix) {
-    return updateHTML(html, config, '');
+    return updateHTML(html, config, prefix);
 }
 /**
  * Updates script tags in an HTML string with integrity attributes based on the provided configuration.

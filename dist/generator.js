@@ -22,7 +22,7 @@ class SRIGenerator {
         const integrity = this.generateHash(content);
         return {
             integrity,
-            path: absolutePath,
+            path: (0, node_path_1.basename)(filePath),
         };
     }
     async generateForFiles(filePaths) {
