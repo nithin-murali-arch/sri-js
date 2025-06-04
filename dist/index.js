@@ -64,7 +64,7 @@ function updateHTML(html, config, prefix, errorHandler) {
     const $ = cheerio.load(html);
     $('script[src]').each((_, element) => {
         const src = $(element).attr('src');
-        if (!src || (src && prefix && src.includes(prefix)))
+        if (!src || (src && prefix && !src.includes(prefix)))
             return;
         const filename = src.split('/').pop() || '';
         const integrity = config[filename];

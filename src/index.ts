@@ -32,7 +32,7 @@ export function updateHTML(html: string, config: SRIConfig, prefix: string, erro
   const $ = cheerio.load(html);
   $('script[src]').each((_, element) => {
     const src = $(element).attr('src');
-    if (!src || (src && prefix && src.includes(prefix))) return;
+    if (!src || (src && prefix && !src.includes(prefix))) return;
 
     const filename = src.split('/').pop() || '';
     const integrity = config[filename];
