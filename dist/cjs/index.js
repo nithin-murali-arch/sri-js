@@ -71,6 +71,9 @@ function updateHTML(html, config, prefix, errorHandler) {
         if (integrity && !$(element).attr('integrity')) {
             $(element).attr('integrity', integrity);
             $(element).attr('crossorigin', 'anonymous');
+            if (errorHandler) {
+                $(element).attr('onerror', `${errorHandler}(event)`);
+            }
         }
     });
     return $.html();
