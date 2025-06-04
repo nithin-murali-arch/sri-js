@@ -39,6 +39,9 @@ export function updateHTML(html: string, config: SRIConfig, prefix: string, erro
     if (integrity && !$(element).attr('integrity')) {
       $(element).attr('integrity', integrity);
       $(element).attr('crossorigin', 'anonymous');
+      if(errorHandler){
+        $(element).attr('onerror', `${errorHandler}(event)`)
+      }
     }
   });
   return $.html();
