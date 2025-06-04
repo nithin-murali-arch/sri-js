@@ -9,6 +9,7 @@ export interface SRIMap {
 export interface SRIOptions {
     algorithm: "sha256" | "sha384" | "sha512";
     basePath: string;
+    errorHandler?: string;
 }
 export interface SRIResult {
     integrity: string;

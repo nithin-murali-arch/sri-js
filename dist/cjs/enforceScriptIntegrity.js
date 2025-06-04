@@ -24,16 +24,15 @@ function enforceScriptIntegrity(config, prefix) {
                 // Override the src setter
                 Object.defineProperty(element, 'src', {
                     set: function (value) {
-                        var _a;
                         // Extract filename from the src
                         let url = value;
                         if (typeof url !== 'string' && url.toString) {
                             url = url.toString();
                         }
-                        const filename = ((_a = url === null || url === void 0 ? void 0 : url.split('/')) === null || _a === void 0 ? void 0 : _a.pop()) || '';
+                        const filename = url?.split('/')?.pop() || '';
                         const integrity = config[filename];
                         // Add integrity and crossorigin attributes if we have a match
-                        if ((!prefix || (prefix && (url === null || url === void 0 ? void 0 : url.includes(prefix)))) && integrity && !this.hasAttribute('integrity')) {
+                        if ((!prefix || (prefix && url?.includes(prefix))) && integrity && !this.hasAttribute('integrity')) {
                             this.setAttribute('integrity', integrity);
                             this.setAttribute('crossorigin', 'anonymous');
                         }
