@@ -5,6 +5,7 @@ const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 class SRIGenerator {
+    options;
     constructor(options) {
         this.options = {
             algorithm: options.algorithm || "sha384",
