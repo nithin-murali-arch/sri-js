@@ -11,6 +11,7 @@ export interface SRIMap {
 export interface SRIOptions {
   algorithm: "sha256" | "sha384" | "sha512";
   basePath: string; // Required since we always provide a default value
+  errorHandler?: string;
 }
 
 export interface SRIResult {

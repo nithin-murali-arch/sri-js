@@ -17,8 +17,8 @@ export function generateSRI(options: SRIOptions): SRIGenerator {
  * @param config - A map of filenames to their SRI hashes.
  * @returns The updated HTML string.
  */
-export function updateHtmlScripts(html: string, config: SRIConfig, prefix:string): string {
-  return updateHTML(html, config, prefix);
+export function updateHtmlScripts(html: string, config: SRIConfig, prefix:string, errorHandler?: string): string {
+  return updateHTML(html, config, prefix, errorHandler);
 }
 
 /**
@@ -28,7 +28,7 @@ export function updateHtmlScripts(html: string, config: SRIConfig, prefix:string
  * @param config - A map of filenames to their SRI hashes.
  * @returns The updated HTML string.
  */
-export function updateHTML(html: string, config: SRIConfig, prefix: string): string {
+export function updateHTML(html: string, config: SRIConfig, prefix: string, errorHandler?: string): string {
   const $ = cheerio.load(html);
   $('script[src]').each((_, element) => {
     const src = $(element).attr('src');
