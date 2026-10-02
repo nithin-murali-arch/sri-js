@@ -33,8 +33,16 @@
     "browser",
     "typescript"
   ],
-  "author": "Nithin Murali",
+  "author": "Nithin Murali <nithintecharch@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nithin-murali-arch/sri-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nithin-murali-arch/sri-js/issues"
+  },
+  "homepage": "https://github.com/nithin-murali-arch/sri-js#readme",
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.24",
@@ -43,6 +51,7 @@
     "esbuild": "^0.20.1",
     "eslint": "^8.57.0",
     "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
     "ts-jest": "^29.1.2",
