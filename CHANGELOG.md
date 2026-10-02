@@ -9,3 +9,4 @@ All notable changes to `@nithin93/sri-js` are documented here.
 - CI uses npm ci on Node 22/24 with build step.
 - ESLint 9 added.
 - Audit fixes (11 to 1, esbuild moderate dev-only remains, breaking-only fix).
+- repository.url uses the plain GitHub URL form (trusted publishing requires an exact match).

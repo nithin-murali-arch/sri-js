@@ -37,7 +37,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nithin-murali-arch/sri-js.git"
+    "url": "https://github.com/nithin-murali-arch/sri-js"
   },
   "bugs": {
     "url": "https://github.com/nithin-murali-arch/sri-js/issues"
