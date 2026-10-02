@@ -58,7 +58,7 @@ describe("SRI Client", () => {
       };
       
       // Mock createElement to return a div
-      (document as any).createElement = jest.fn().mockImplementation((tagName: string) => {
+      (document as any).createElement = jest.fn().mockImplementation((_tagName: string) => {
         return { tagName: "DIV", setAttribute: jest.fn() };
       });
 
