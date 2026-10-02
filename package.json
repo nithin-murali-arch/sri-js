@@ -1,7 +1,7 @@
 {
   "name": "@nithin93/sri-js",
   "version": "1.2.4",
-  "description": "A lightweight library to enforce Subresource Integrity (SRI) for dynamically loaded scripts in the browser and to update script tags in HTML using Cheerio.",
+  "description": "Adds SRI hashes to dynamically loaded scripts and rewrites script tags in HTML.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -1,13 +1,18 @@
-[![npm version](https://img.shields.io/npm/v/@nithin93/sri-js.svg)](https://www.npmjs.com/package/@nithin93/sri-js)
-[![Build Status](https://github.com/nithin-murali-arch/sri-js/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nithin-murali-arch/sri-js/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D16.0.0-green.svg)](https://nodejs.org/)
-[![Bundle Size](https://img.shields.io/bundlephobia/min/@nithin93/sri-js)](https://bundlephobia.com/package/@nithin93/sri-js)
+# sri-js
 
-# SRI-JS
+Adds SRI hashes to dynamically loaded scripts and rewrites script tags in HTML.
 
-A lightweight library to enforce Subresource Integrity (SRI) for dynamically loaded scripts in the browser and to update script tags in HTML using Cheerio.
+[![CI](https://github.com/nithin-murali-arch/sri-js/actions/workflows/ci.yml/badge.svg)](https://github.com/nithin-murali-arch/sri-js/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@nithin93%2Fsri-js.svg)](https://www.npmjs.com/package/@nithin93/sri-js)
+
+```bash
+npm install @nithin93/sri-js
+```
+
+```typescript
+import { updateHTML } from '@nithin93/sri-js';
+const updated = updateHTML(html, sriMap, '/static/');
+```
 
 ## Why SRI?
 
