@@ -1,12 +1,12 @@
 {
   "name": "@nithin93/sri-js",
-  "version": "1.2.4",
-  "description": "Adds SRI hashes to dynamically loaded scripts and rewrites script tags in HTML.",
+  "version": "1.2.5",
+  "description": "Subresource Integrity (SRI) for JavaScript: add integrity attributes to HTML script tags and to scripts created at runtime.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.18.1"
   },
   "scripts": {
     "build": "rimraf dist && tsc && tsc -p tsconfig.cjs.json && npm run build:browser",
@@ -18,19 +18,26 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/cjs/index.js"
-    }
+    },
+    "./sri-js.js": "./public/sri-js.js",
+    "./package.json": "./package.json"
   },
   "keywords": [
-    "sri",
     "subresource-integrity",
-    "security",
+    "sri",
     "integrity",
-    "cheerio",
+    "sri-hash",
+    "script-integrity",
+    "security",
     "html",
-    "script",
+    "script-tag",
+    "sha384",
     "browser",
+    "dynamic-script",
+    "cdn",
     "typescript"
   ],
   "author": "Nithin Murali <nithintecharch@gmail.com>",
