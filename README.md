@@ -119,9 +119,9 @@ The root package entry imports `node:crypto` and `node:fs/promises`. Use the bro
 
 Use integrity only for libraries whose bytes stay fixed at a versioned URL. The [checkout example](examples/checkout-page/) pins dayjs 1.11.13 from cdnjs, then serves a tampered local copy with the original hash. Its Chrome check confirms that the CDN script runs, the tampered copy does not run, and an error report reaches the server.
 
-SRI can help control which script bytes a merchant's own checkout page loads when considering PCI DSS 4.0 requirement 6.4.3. This example does not establish compliance. Script authorization, inventory, justification, and other requirements need separate controls and assessment.
+SRI can help control which script bytes a merchant's own checkout page loads when considering [PCI DSS requirement 6.4.3](https://www.pcisecuritystandards.org/faqs/1581/). This example does not establish compliance. Script authorization, inventory, justification, and other requirements need separate controls and assessment.
 
-Do not pin Stripe.js, Google Tag Manager, or other self-updating vendor scripts at a URL whose contents change. Follow each vendor's loading requirements and use a Content Security Policy to restrict script sources and authorized execution. CSP and SRI cover different behavior. Neither this library nor this example provides a compliance determination.
+Do not pin Stripe.js, Google Tag Manager, or other self-updating vendor scripts at a URL whose contents change. Follow each vendor's loading requirements and use a [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP) to restrict script sources and authorized execution. CSP and SRI cover different behavior. Neither this library nor this example provides a compliance determination.
 
 ### Report script load failures to your server
 
@@ -282,6 +282,35 @@ app.listen(8080);
 ```
 
 The example assumes that `views/index.html` contains `<script src="/static/app.js"></script>` and that the file is `public/app.js`. If you render the page on each request, call `updateHTML` on each rendered string and keep the `hashes` from startup.
+
+### Add SRI to an Astro build
+
+Run the [postbuild script](#add-sri-after-any-build-with-a-postbuild-script) after `astro build`. Astro writes to `dist` by default, so use `node scripts/add-sri.mjs dist`. The [Astro example](examples/frameworks/astro/) builds a page with a script from `public/app.js` and checks the generated tag. Inline scripts have no external resource for SRI to check. Build-time integrity on page script tags does not add integrity to `import()` chunks.
+
+### Add SRI to an Eleventy build
+
+Run `eleventy && node scripts/add-sri.mjs _site` with the [postbuild script](#add-sri-after-any-build-with-a-postbuild-script). Use your configured output folder if it differs from Eleventy's `_site` default. Copy JavaScript into that folder before hashing. The [Eleventy example](examples/frameworks/eleventy/) configures `dist` and a passthrough copy for its script, then runs the postbuild step there.
+
+### Add SRI to a Hugo build
+
+Run `hugo && node scripts/add-sri.mjs public` with the [postbuild script](#add-sri-after-any-build-with-a-postbuild-script). Hugo copies files from `static` into its output directory. The [Hugo example](examples/frameworks/hugo/) uses `hugo --destination dist` and hashes that folder. All three examples install the packed npm package and generate real SHA-384 values. File basenames must remain unique across the generated site.
+
+### Serve HTML with SRI from Fastify
+
+Generate hashes from your public script folder at startup, then transform HTML strings in an `onSend` hook:
+
+```js
+app.addHook('onSend', async (request, reply, payload) => {
+  if (typeof payload !== 'string' || !String(reply.getHeader('content-type')).includes('text/html')) return payload;
+  return updateHTML(payload, hashes);
+});
+```
+
+The [Fastify server](examples/servers/fastify/) serves a script and an HTML page on port 4311. Install the tarball, start it, and run `curl http://127.0.0.1:4311/` to inspect the generated `integrity` and `crossorigin` attributes. Keep the bytes served by your script route identical to the bytes you hashed.
+
+### Serve HTML with SRI from NestJS
+
+Use an interceptor to transform HTML responses through `updateHTML`. Generate hashes before listening, set the page response's content type to `text/html`, and leave JavaScript responses unchanged. The [NestJS server](examples/servers/nestjs/) includes the interceptor, controller, and module. Install the tarball, build it, start it, and run `curl http://127.0.0.1:4312/` to inspect the generated attributes. Run `curl http://127.0.0.1:4312/app.js` to check the script route as well.
 
 ### Add SRI to a Next.js static export
 
