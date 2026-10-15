@@ -43,6 +43,38 @@ function pack(directory) {
   );
   return join(temporary, result[0].filename);
 }
+
+async function serveOutput(directory) {
+  const server = createServer(async (request, response) => {
+    try {
+      const pathname = new URL(request.url, "http://example.test").pathname;
+      if (!pathname.startsWith("/shop/")) {
+        response.writeHead(404).end();
+        return;
+      }
+      const relativePath =
+        decodeURIComponent(pathname.slice("/shop/".length)) || "index.html";
+      if (relativePath.split("/").includes("..")) {
+        response.writeHead(400).end();
+        return;
+      }
+      response.setHeader(
+        "Content-Type",
+        extname(relativePath) === ".js" ? "text/javascript" : "text/html",
+      );
+      response.setHeader("Cache-Control", "no-store");
+      response.end(await readFile(join(directory, relativePath)));
+    } catch {
+      response.writeHead(404).end();
+    }
+  });
+  await new Promise((done, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", done);
+  });
+  return { server, origin: `http://127.0.0.1:${server.address().port}` };
+}
+
 let browser;
 try {
   console.log(command(npm, ["test"], example).trim());
@@ -136,35 +168,8 @@ try {
     const asset = passed.records.find(
       (item) => item.code === "LOCAL_VERIFIED",
     ).asset;
-    const server = createServer(async (request, response) => {
-      try {
-        const pathname = new URL(request.url, "http://example.test").pathname;
-        if (!pathname.startsWith("/shop/")) {
-          response.writeHead(404).end();
-          return;
-        }
-        const relativePath =
-          decodeURIComponent(pathname.slice("/shop/".length)) || "index.html";
-        if (relativePath.split("/").includes("..")) {
-          response.writeHead(400).end();
-          return;
-        }
-        response.setHeader(
-          "Content-Type",
-          extname(relativePath) === ".js" ? "text/javascript" : "text/html",
-        );
-        response.setHeader("Cache-Control", "no-store");
-        response.end(await readFile(join(directory, relativePath)));
-      } catch {
-        response.writeHead(404).end();
-      }
-    });
-    await new Promise((done, reject) => {
-      server.once("error", reject);
-      server.listen(0, "127.0.0.1", done);
-    });
+    const { server, origin } = await serveOutput(directory);
     try {
-      const origin = `http://127.0.0.1:${server.address().port}`;
       const validPage = await browser.newPage();
       await validPage.goto(`${origin}/shop/index.html`);
       assert.equal(
@@ -202,6 +207,116 @@ try {
     } finally {
       await new Promise((done) => server.close(done));
     }
+  }
+  const baseOrderOutput = join(temporary, "base-order-output");
+  await mkdir(join(baseOrderOutput, "assets"), { recursive: true });
+  await mkdir(join(baseOrderOutput, "other/assets"), { recursive: true });
+  const baseOrderBytes = "window.sriAuditBaseOrderExecuted = true;";
+  const baseOrderIntegrity = sri
+    .generateSRI({ algorithm: "sha384" })
+    .generateHash(Buffer.from(baseOrderBytes));
+  const baseOrderScript = `<script src="assets/app.js" integrity="${baseOrderIntegrity}"></script>`;
+  await writeFile(join(baseOrderOutput, "assets/app.js"), baseOrderBytes + " ");
+  await writeFile(join(baseOrderOutput, "other/assets/app.js"), baseOrderBytes);
+  await writeFile(
+    join(baseOrderOutput, "index.html"),
+    baseOrderScript + '<base href="/shop/other/">',
+  );
+  await writeFile(
+    join(baseOrderOutput, "after.html"),
+    '<base href="/shop/other/">' + baseOrderScript,
+  );
+  await writeFile(
+    join(baseOrderOutput, "foster.html"),
+    "<table>" + baseOrderScript + '<base href="/shop/other/"></table>',
+  );
+  await mkdir(join(baseOrderOutput, "one/assets"), { recursive: true });
+  await mkdir(join(baseOrderOutput, "two/assets"), { recursive: true });
+  await writeFile(join(baseOrderOutput, "one/assets/app.js"), baseOrderBytes);
+  await writeFile(
+    join(baseOrderOutput, "two/assets/app.js"),
+    baseOrderBytes + " ",
+  );
+  await writeFile(
+    join(baseOrderOutput, "multi.html"),
+    '<table><tr><td><base href="/shop/one/"></td></tr><base href="/shop/two/">' +
+      baseOrderScript +
+      "</table>",
+  );
+  const baseOrderReport = audit(baseOrderOutput, 1);
+  assert.deepEqual(
+    baseOrderReport.records.map(({ document, code, asset }) => ({
+      document,
+      code,
+      asset,
+    })),
+    [
+      {
+        document: "after.html",
+        code: "LOCAL_VERIFIED",
+        asset: "other/assets/app.js",
+      },
+      {
+        document: "foster.html",
+        code: "INTEGRITY_MISMATCH",
+        asset: "assets/app.js",
+      },
+      {
+        document: "index.html",
+        code: "INTEGRITY_MISMATCH",
+        asset: "assets/app.js",
+      },
+      { document: "multi.html", code: "AMBIGUOUS_BASE_ORDER", asset: null },
+      { document: "multi.html", code: "AMBIGUOUS_BASE_ORDER", asset: null },
+    ],
+  );
+  const { server: orderServer, origin: orderOrigin } =
+    await serveOutput(baseOrderOutput);
+  try {
+    for (const document of ["index.html", "foster.html", "multi.html"]) {
+      const earlyPage = await browser.newPage();
+      const errors = [];
+      const scriptRequests = [];
+      earlyPage.on("console", (message) => {
+        if (message.type() === "error") errors.push(message.text());
+      });
+      earlyPage.on("request", (request) => {
+        if (request.resourceType() === "script")
+          scriptRequests.push(new URL(request.url()).pathname);
+      });
+      await earlyPage.goto(`${orderOrigin}/shop/${document}`);
+      if (document === "multi.html") {
+        assert.ok(scriptRequests.includes("/shop/two/assets/app.js"));
+        assert.ok(
+          errors.some(
+            (message) =>
+              message.includes("/shop/two/assets/app.js") &&
+              /integrity|digest/i.test(message),
+          ),
+        );
+      } else assert.deepEqual(scriptRequests, ["/shop/assets/app.js"]);
+      assert.equal(
+        await earlyPage.evaluate(() => window.sriAuditBaseOrderExecuted),
+        undefined,
+      );
+      assert.ok(
+        errors.some((message) => /integrity|digest/i.test(message)),
+        "Chrome blocks the earlier tampered script.",
+      );
+      await earlyPage.close();
+    }
+    const latePage = await browser.newPage();
+    await latePage.goto(`${orderOrigin}/shop/after.html`);
+    assert.equal(
+      await latePage.evaluate(() => window.sriAuditBaseOrderExecuted),
+      true,
+    );
+    await latePage.close();
+    console.log(
+      "base order: installed CLI rejected earlier tampered assets/app.js in ordinary and foster-parented HTML, verified other/assets/app.js after the base, and Chrome requested and blocked the earlier bytes in both pages. Conflicting multiple bases produce an explicit ambiguity finding while Chrome blocks the actual two/assets/app.js bytes.",
+    );
+  } finally {
+    await new Promise((done) => orderServer.close(done));
   }
   console.log(
     "Verification passed. Remote responses, module graphs, runtime scripts, and server transformations remain outside coverage.",

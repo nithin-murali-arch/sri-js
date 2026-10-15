@@ -232,7 +232,9 @@ export async function auditOutput(options) {
         );
         continue;
       }
-      tree = parse(await readFile(htmlFile, "utf8"));
+      tree = parse(await readFile(htmlFile, "utf8"), {
+        sourceCodeLocationInfo: true,
+      });
     } catch (error) {
       records.push(
         record(
@@ -245,46 +247,68 @@ export async function auditOutput(options) {
       continue;
     }
     const nodes = elements(tree);
-    const documentUrl = new URL(
-      document.split("/").map(encodeURIComponent).join("/"),
-      base,
-    );
-    let effectiveBase = documentUrl;
-    const baseNode = nodes.find(
+    const baseNodes = nodes.filter(
       ({ node, inert }) =>
         !inert &&
         node.namespaceURI === "http://www.w3.org/1999/xhtml" &&
         node.tagName === "base" &&
         node.attrs.some((attr) => attr.name === "href"),
     );
-    if (baseNode) {
-      try {
-        effectiveBase = new URL(
-          baseNode.node.attrs.find((attr) => attr.name === "href").value,
-          documentUrl,
-        );
-        if (!["http:", "https:"].includes(effectiveBase.protocol))
-          throw new Error("unsupported base");
-      } catch {
-        records.push(
-          record(
-            "INVALID_BASE",
-            "finding",
-            "The first base href cannot resolve to an HTTP(S) URL.",
-            { document },
-          ),
-        );
-        effectiveBase = null;
-      }
-    }
+    nodes.sort(
+      (left, right) =>
+        (left.node.sourceCodeLocation?.startOffset ?? -1) -
+        (right.node.sourceCodeLocation?.startOffset ?? -1),
+    );
+    const sourceBases = nodes.filter((item) => baseNodes.includes(item));
+    const ambiguousBaseOrder = baseNodes.some(
+      (item, index) => item !== sourceBases[index],
+    );
+    if (ambiguousBaseOrder)
+      records.push(
+        record(
+          "AMBIGUOUS_BASE_ORDER",
+          "finding",
+          "HTML parsing reorders base elements. Script asset selection is outside this static audit policy.",
+          { document },
+        ),
+      );
+    const documentUrl = new URL(
+      document.split("/").map(encodeURIComponent).join("/"),
+      base,
+    );
+    let effectiveBase = documentUrl;
+    let firstBaseSeen = false;
     let tagIndex = 0;
-    for (const { node, inert } of nodes.filter(
-      ({ node }) => node.tagName === "script",
-    )) {
-      tagIndex++;
+    for (const { node, inert } of nodes) {
       const attrs = Object.fromEntries(
         node.attrs.map(({ name, value }) => [name, value]),
       );
+      if (
+        !firstBaseSeen &&
+        !inert &&
+        node.namespaceURI === "http://www.w3.org/1999/xhtml" &&
+        node.tagName === "base" &&
+        Object.hasOwn(attrs, "href")
+      ) {
+        firstBaseSeen = true;
+        try {
+          effectiveBase = new URL(attrs.href, documentUrl);
+          if (!["http:", "https:"].includes(effectiveBase.protocol))
+            throw new Error("unsupported base");
+        } catch {
+          records.push(
+            record(
+              "INVALID_BASE",
+              "finding",
+              "The first base href cannot resolve to an HTTP(S) URL.",
+              { document },
+            ),
+          );
+          effectiveBase = null;
+        }
+      }
+      if (node.tagName !== "script") continue;
+      tagIndex++;
       const location = { document, tagIndex, source: attrs.src ?? null };
       const type = asciiTrim(attrs.type ?? "").toLowerCase();
       const language = asciiTrim(attrs.language ?? "").toLowerCase();
@@ -315,6 +339,17 @@ export async function auditOutput(options) {
             skip,
             "skipped",
             "This script is outside executable external-script coverage.",
+            location,
+          ),
+        );
+        continue;
+      }
+      if (ambiguousBaseOrder) {
+        records.push(
+          record(
+            "AMBIGUOUS_BASE_ORDER",
+            "finding",
+            "Script bytes cannot be verified because HTML parsing reorders the document's base elements.",
             location,
           ),
         );

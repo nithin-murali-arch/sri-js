@@ -14,7 +14,7 @@ node cli.mjs /path/to/dist --base https://example.test/shop/
 node cli.mjs /path/to/dist --base https://example.test/shop/ --json
 ```
 
-Use the exact HTTP or HTTPS directory URL that maps to the output root. Keep the final slash. For example, `dist/docs/page.html` maps to `https://example.test/shop/docs/page.html`. The audit does not infer clean routes, redirects, or additional asset mounts.
+Use the exact HTTP or HTTPS directory URL that maps to the output root. Keep the final slash. For example, `dist/docs/page.html` maps to `https://example.test/shop/docs/page.html`. The audit does not infer clean routes, redirects, or additional asset mounts. The first non-inert HTML base href affects only later scripts in parser source order. It never redirects an earlier script to different bytes. If malformed HTML reorders multiple base elements, the audit reports `AMBIGUOUS_BASE_ORDER` and verifies no script bytes in that document. Script-driven DOM and base changes are outside this static audit.
 
 Exit 0 means the configured policy passed. Exit 1 means the audit completed with findings. Exit 2 means invalid input or an incomplete operation, including unreadable files. Both formats include coverage limits. JSON uses the [versioned report schema](schema.md).
 

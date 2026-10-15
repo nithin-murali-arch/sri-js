@@ -277,29 +277,80 @@ test("invalid input and operation failures use exit 2, with structured CLI outpu
   }
 });
 
-test('a later base cannot redirect an earlier script away from tampered bytes', async (t) => {
+test("a later base cannot redirect an earlier script away from tampered bytes", async (t) => {
   const root = await fixture(t, {
-    'assets/app.js': bytes + ' ',
-    'other/assets/app.js': bytes,
-    'index.html': script('assets/app.js') + '<base href="/shop/other/">' + script('assets/app.js'),
+    "assets/app.js": bytes + " ",
+    "other/assets/app.js": bytes,
+    "index.html":
+      script("assets/app.js") +
+      '<base href="/shop/other/">' +
+      script("assets/app.js"),
   });
   const result = await auditOutput({ directory: root, baseUrl });
   assert.equal(result.exitCode, 1);
-  assert.deepEqual(result.records.map((item) => ({ code: item.code, asset: item.asset })), [
-    { code: 'INTEGRITY_MISMATCH', asset: 'assets/app.js' },
-    { code: 'LOCAL_VERIFIED', asset: 'other/assets/app.js' },
-  ]);
+  assert.deepEqual(
+    result.records.map((item) => ({ code: item.code, asset: item.asset })),
+    [
+      { code: "INTEGRITY_MISMATCH", asset: "assets/app.js" },
+      { code: "LOCAL_VERIFIED", asset: "other/assets/app.js" },
+    ],
+  );
   assert.equal(run(root).status, 1);
 });
 
-test('an invalid later first base affects only following scripts and never falls back to another base', async (t) => {
+test("an invalid later first base affects only following scripts and never falls back to another base", async (t) => {
   const root = await fixture(t, {
-    'app.js': bytes,
-    'index.html': script('app.js') + '<base href="http://["><base href="/shop/">' + script('app.js'),
+    "app.js": bytes,
+    "index.html":
+      script("app.js") +
+      '<base href="http://["><base href="/shop/">' +
+      script("app.js"),
   });
   const result = await auditOutput({ directory: root, baseUrl });
-  assert.deepEqual(result.records.map((item) => item.code), ['LOCAL_VERIFIED', 'INVALID_BASE', 'INVALID_BASE']);
-  assert.equal(result.records[0].asset, 'app.js');
+  assert.deepEqual(
+    result.records.map((item) => item.code),
+    ["LOCAL_VERIFIED", "INVALID_BASE", "INVALID_BASE"],
+  );
+  assert.equal(result.records[0].asset, "app.js");
   assert.equal(result.summary.verified, 1);
   assert.equal(result.exitCode, 1);
+});
+
+test("table foster parenting cannot move a later base ahead of an earlier script audit", async (t) => {
+  const root = await fixture(t, {
+    "assets/app.js": bytes + " ",
+    "other/assets/app.js": bytes,
+    "index.html":
+      "<table>" +
+      script("assets/app.js") +
+      '<base href="/shop/other/"></table>',
+  });
+  const result = await auditOutput({ directory: root, baseUrl });
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(
+    result.records.map((item) => ({ code: item.code, asset: item.asset })),
+    [{ code: "INTEGRITY_MISMATCH", asset: "assets/app.js" }],
+  );
+});
+
+test("conflicting source and DOM base order is an explicit finding with no verified script bytes", async (t) => {
+  const root = await fixture(t, {
+    "one/assets/app.js": bytes,
+    "two/assets/app.js": bytes + " ",
+    "index.html":
+      '<table><tr><td><base href="/shop/one/"></td></tr><base href="/shop/two/">' +
+      script("assets/app.js") +
+      "</table>",
+  });
+  const result = await auditOutput({ directory: root, baseUrl });
+  assert.equal(result.exitCode, 1);
+  assert.equal(result.summary.verified, 0);
+  assert.deepEqual(
+    result.records.map((item) => ({ code: item.code, asset: item.asset })),
+    [
+      { code: "AMBIGUOUS_BASE_ORDER", asset: null },
+      { code: "AMBIGUOUS_BASE_ORDER", asset: null },
+    ],
+  );
+  assert.equal(run(root).status, 1);
 });
