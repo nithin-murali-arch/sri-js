@@ -158,6 +158,116 @@ interface SRIOptions {
 }
 ```
 
+## Use it with your framework
+
+### Add SRI in a Vite build
+
+To add integrity to the script tags in a Vite production build, add this plugin to `vite.config.ts`.
+
+```ts
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { defineConfig, type Plugin } from 'vite';
+import { generateSRI, updateHTML } from '@nithin93/sri-js';
+
+function sri(): Plugin {
+  return {
+    name: 'sri',
+    apply: 'build',
+    async writeBundle({ dir = 'dist' }) {
+      const hashes = await generateSRI({ algorithm: 'sha384', basePath: dir }).generateForDirectory(['.js']);
+      const htmlPath = join(dir, 'index.html');
+      await writeFile(htmlPath, updateHTML(await readFile(htmlPath, 'utf8'), hashes));
+    },
+  };
+}
+
+export default defineConfig({
+  plugins: [sri()],
+});
+```
+
+The plugin runs only in `vite build`, so pages from the Vite dev server get no integrity. Chunks that the app loads with `import()` get no integrity either, because the browser fetches them without a script tag.
+
+### Add SRI after any build with a postbuild script
+
+To add integrity after a webpack build, or after any build that writes HTML and JavaScript files to one folder, save this script as `scripts/add-sri.mjs`.
+
+```js
+import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { generateSRI, updateHTML } from '@nithin93/sri-js';
+
+const dir = process.argv[2] ?? 'dist';
+const hashes = await generateSRI({ algorithm: 'sha384', basePath: dir }).generateForDirectory(['.js']);
+
+for (const file of await readdir(dir, { recursive: true })) {
+  if (!file.endsWith('.html')) continue;
+  const path = join(dir, file);
+  await writeFile(path, updateHTML(await readFile(path, 'utf8'), hashes));
+}
+```
+
+Add `"postbuild": "node scripts/add-sri.mjs dist"` to the `scripts` in `package.json`, and npm runs the script after `npm run build`. The script finds `.js` files in subfolders but keys each hash by file name, so [files with the same name collide](#generate-hashes-at-build-time).
+
+### Serve HTML with SRI from Express
+
+To serve a page from Express with integrity on its script tags, hash the scripts once at startup in `server.mjs` and pass the page through `updateHTML`.
+
+```js
+import { readFile } from 'node:fs/promises';
+import express from 'express';
+import { generateSRI, updateHTML } from '@nithin93/sri-js';
+
+const hashes = await generateSRI({ algorithm: 'sha384', basePath: 'public' }).generateForDirectory(['.js']);
+const page = updateHTML(await readFile('views/index.html', 'utf8'), hashes);
+
+const app = express();
+app.use('/static', express.static('public'));
+app.get('/', (req, res) => res.type('html').send(page));
+app.listen(8080);
+```
+
+The example assumes that `views/index.html` contains `<script src="/static/app.js"></script>` and that the file is `public/app.js`. If you render the page on each request, call `updateHTML` on each rendered string and keep the `hashes` from startup.
+
+### Add SRI to a Next.js static export
+
+If your Next.js app sets `output: 'export'` in `next.config.ts`, run the [postbuild script](#add-sri-after-any-build-with-a-postbuild-script) on the `out` folder.
+
+```json
+{
+  "scripts": {
+    "build": "next build",
+    "postbuild": "node scripts/add-sri.mjs out"
+  }
+}
+```
+
+This package does not cover the default Next.js output that `next start` serves. Next.js also adds `<link rel="preload" as="script">` tags that get no integrity, so the browser logs a warning and downloads that script a second time.
+
+### Add SRI to a third-party script loaded at runtime
+
+To check a script that your page adds at runtime, such as a widget from a CDN, put its hash in `window.SRI` before you load the browser bundle.
+
+```html
+<script>
+  window.SRI = {
+    config: {
+      'confetti.browser.js': 'sha384-/Ko/tqVwPYurnBe+Mj8WWw+39WmyOZn/kU+neqXn4hRxGI575k07mB/hIekAT51+'
+    }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@nithin93/sri-js@1/public/sri-js.js"></script>
+<script>
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js';
+  script.onload = () => confetti();
+  document.head.appendChild(script);
+</script>
+```
+
+In an app with a bundler, still load the bundle with a `<script>` tag, because importing `enforceScriptIntegrity` from the package pulls cheerio into the browser build. The setup order and limits are in [Add integrity to scripts created at runtime](#add-integrity-to-scripts-created-at-runtime).
+
 ## When to use it
 
 - You build static HTML and want integrity attributes written into script tags as a build step.
@@ -206,6 +316,10 @@ Define `window.SRI.config`, then load `public/sri-js.js`. The bundle sets `integ
 ### How do I add SRI to script tags in an HTML file at build time?
 
 Hash your built files with `generateForDirectory`, then pass the HTML and the hashes to `updateHTML`. A full script that does both is in [Generate hashes at build time](#generate-hashes-at-build-time).
+
+### How do I add SRI to a Vite, webpack or Next.js build?
+
+Use the [Vite plugin](#add-sri-in-a-vite-build) for Vite, and run the [postbuild script](#add-sri-after-any-build-with-a-postbuild-script) on the build output for webpack or a [Next.js static export](#add-sri-to-a-nextjs-static-export).
 
 ### Does SRI work for scripts from a CDN?
 

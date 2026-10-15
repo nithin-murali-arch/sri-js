@@ -2,6 +2,12 @@
 
 All notable changes to `@nithin93/sri-js` are documented here.
 
+## 1.2.6 — 2026-10-15
+
+- README: added downloads, license, types and Node.js badges.
+- README: added framework guides for a Vite build, a postbuild script for webpack and other builds, Express, a Next.js static export, and third-party scripts loaded at runtime. Added an FAQ entry that links to them.
+- No code changes.
+
 ## 1.2.5 — 2026-10-15
 
 - Script URLs with a query string or hash now get integrity. `/static/app.js?v=2` matches the config key `app.js` in both `updateHTML` and the browser bundle. A key that includes the query string, such as `app.js?v=2`, still wins.
