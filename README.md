@@ -115,6 +115,43 @@ Replace the placeholder with a hash generated from the deployed file. This entry
 
 The root package entry imports `node:crypto` and `node:fs/promises`. Use the browser subpath or the script bundle in browser code.
 
+### Pin scripts on a checkout page
+
+Use integrity only for libraries whose bytes stay fixed at a versioned URL. The [checkout example](examples/checkout-page/) pins dayjs 1.11.13 from cdnjs, then serves a tampered local copy with the original hash. Its Chrome check confirms that the CDN script runs, the tampered copy does not run, and an error report reaches the server.
+
+SRI can help control which script bytes a merchant's own checkout page loads when considering PCI DSS 4.0 requirement 6.4.3. This example does not establish compliance. Script authorization, inventory, justification, and other requirements need separate controls and assessment.
+
+Do not pin Stripe.js, Google Tag Manager, or other self-updating vendor scripts at a URL whose contents change. Follow each vendor's loading requirements and use a Content Security Policy to restrict script sources and authorized execution. CSP and SRI cover different behavior. Neither this library nor this example provides a compliance determination.
+
+### Report script load failures to your server
+
+Define a trusted global function before the scripts it watches, then pass its name as the fourth argument to `updateHTML`:
+
+```js
+const html = updateHTML(page, hashes, undefined, 'onSriFail');
+```
+
+```html
+<script>
+  window.onSriFail = function (event) {
+    navigator.sendBeacon('/integrity-report', JSON.stringify({ url: event.target.src }));
+  };
+</script>
+```
+
+The [checkout receiver and browser check](examples/checkout-page/) demonstrate the complete request. Script error events also cover network and other loading failures, so treat the report as a script load failure rather than proof of an integrity mismatch. A beacon is best effort. Avoid putting secrets in script URLs or reports. The handler name must be trusted source code. A CSP that blocks inline event handlers also blocks this `onerror` approach. Adapt the reporting mechanism to your policy.
+
+### Fail CI when a script has no integrity
+
+Copy [scripts/check-sri.mjs](scripts/check-sri.mjs) into your project and install `cheerio`. Run the check after your build and SRI postbuild step:
+
+```sh
+npm install --save-dev cheerio
+node scripts/check-sri.mjs dist
+```
+
+The script recursively parses every HTML file and exits with status 1 when a `<script src>` has missing or blank integrity. It also fails when the output contains no HTML. It checks attribute presence, not hash correctness, CSP, inline scripts, or `import()` chunks. Self-updating vendor scripts fail this strict policy too. Run `node scripts/test-check-sri.mjs` in this repository to reproduce the passing, missing, and blank-attribute cases.
+
 ## API
 
 ### `updateHTML(html, config, prefix?, errorHandler?)`
