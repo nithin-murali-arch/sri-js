@@ -1,10 +1,10 @@
 import { SRIGenerator } from "./generator";
 import { SRIOptions } from "./types";
 import * as cheerio from 'cheerio';
-import { SRIConfig } from './enforceScriptIntegrity';
+import { SRIConfig, enforceScriptIntegrity, findIntegrity } from './enforceScriptIntegrity';
 
-export { SRIGenerator };
-export type { SRIOptions };
+export { SRIGenerator, enforceScriptIntegrity };
+export type { SRIOptions, SRIConfig };
 
 export function generateSRI(options: SRIOptions): SRIGenerator {
   return new SRIGenerator(options);
@@ -17,7 +17,7 @@ export function generateSRI(options: SRIOptions): SRIGenerator {
  * @param config - A map of filenames to their SRI hashes.
  * @returns The updated HTML string.
  */
-export function updateHtmlScripts(html: string, config: SRIConfig, prefix:string, errorHandler?: string): string {
+export function updateHtmlScripts(html: string, config: SRIConfig, prefix?: string, errorHandler?: string): string {
   return updateHTML(html, config, prefix, errorHandler);
 }
 
@@ -28,14 +28,13 @@ export function updateHtmlScripts(html: string, config: SRIConfig, prefix:string
  * @param config - A map of filenames to their SRI hashes.
  * @returns The updated HTML string.
  */
-export function updateHTML(html: string, config: SRIConfig, prefix: string, errorHandler?: string): string {
+export function updateHTML(html: string, config: SRIConfig, prefix?: string, errorHandler?: string): string {
   const $ = cheerio.load(html);
   $('script[src]').each((_, element) => {
     const src = $(element).attr('src');
     if (!src || (src && prefix && !src.includes(prefix))) return;
 
-    const filename = src.split('/').pop() || '';
-    const integrity = config[filename];
+    const integrity = findIntegrity(config, src);
     if (integrity && !$(element).attr('integrity')) {
       $(element).attr('integrity', integrity);
       $(element).attr('crossorigin', 'anonymous');

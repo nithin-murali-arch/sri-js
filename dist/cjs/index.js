@@ -33,13 +33,15 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SRIGenerator = void 0;
+exports.enforceScriptIntegrity = exports.SRIGenerator = void 0;
 exports.generateSRI = generateSRI;
 exports.updateHtmlScripts = updateHtmlScripts;
 exports.updateHTML = updateHTML;
 const generator_1 = require("./generator");
 Object.defineProperty(exports, "SRIGenerator", { enumerable: true, get: function () { return generator_1.SRIGenerator; } });
 const cheerio = __importStar(require("cheerio"));
+const enforceScriptIntegrity_1 = require("./enforceScriptIntegrity");
+Object.defineProperty(exports, "enforceScriptIntegrity", { enumerable: true, get: function () { return enforceScriptIntegrity_1.enforceScriptIntegrity; } });
 function generateSRI(options) {
     return new generator_1.SRIGenerator(options);
 }
@@ -66,8 +68,7 @@ function updateHTML(html, config, prefix, errorHandler) {
         const src = $(element).attr('src');
         if (!src || (src && prefix && !src.includes(prefix)))
             return;
-        const filename = src.split('/').pop() || '';
-        const integrity = config[filename];
+        const integrity = (0, enforceScriptIntegrity_1.findIntegrity)(config, src);
         if (integrity && !$(element).attr('integrity')) {
             $(element).attr('integrity', integrity);
             $(element).attr('crossorigin', 'anonymous');
