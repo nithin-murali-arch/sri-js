@@ -3,6 +3,18 @@ import { SRIMap } from './types';
 let isWrapped = false;
 
 /**
+ * Finds the integrity hash for a script URL. The exact last path segment wins
+ * (so a key like "app.js?v=1" still works); otherwise the segment is looked up
+ * with its query string and hash removed.
+ */
+export function findIntegrity(config: SRIMap, src: string): string | undefined {
+  return (
+    config[src.split('/').pop() || ''] ||
+    config[src.split(/[?#]/)[0].split('/').pop() || '']
+  );
+}
+
+/**
  * Enforces Subresource Integrity (SRI) for script elements by adding integrity attributes
  * based on the provided configuration map.
  * 
@@ -31,8 +43,7 @@ export function enforceScriptIntegrity(config: SRIMap, prefix?: string): void {
             if(typeof url !== 'string' && url.toString){
               url = url.toString();
             }
-            const filename = url?.split('/')?.pop() || '';
-            const integrity = config[filename];
+            const integrity = typeof url === 'string' ? findIntegrity(config, url) : undefined;
             
             // Add integrity and crossorigin attributes if we have a match
             if ((!prefix || (prefix && url?.includes(prefix))) && integrity && !this.hasAttribute('integrity')) {
