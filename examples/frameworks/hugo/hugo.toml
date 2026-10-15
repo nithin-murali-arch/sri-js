@@ -1,0 +1,4 @@
+baseURL = "https://example.org/"
+locale = "en-us"
+title = "Hugo SRI example"
+disableKinds = ["taxonomy", "term", "RSS", "sitemap"]

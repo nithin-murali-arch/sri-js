@@ -1,0 +1,12 @@
+{
+  "name": "sri-fastify-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@nithin93/sri-js": "^1.2.6",
+    "fastify": "^5.2.1"
+  }
+}
