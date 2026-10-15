@@ -1,6 +1,6 @@
 {
   "name": "@nithin93/sri-js",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "Subresource Integrity (SRI) for JavaScript: add integrity attributes to HTML script tags and to scripts created at runtime.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/index.js",
