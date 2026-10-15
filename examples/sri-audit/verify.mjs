@@ -13,7 +13,11 @@ import { chromium } from "playwright";
 const example = dirname(fileURLToPath(import.meta.url));
 const repository = resolve(example, "../..");
 const temporary = await mkdtemp(join(tmpdir(), "sri-audit-packed-"));
-const environment = { ...process.env };
+const environment = {
+  ...process.env,
+  npm_config_cache:
+    process.env.npm_config_cache ?? join(temporary, "npm-cache"),
+};
 delete environment.NODE_OPTIONS;
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 function command(binary, args, cwd) {
