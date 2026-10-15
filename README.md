@@ -1,7 +1,11 @@
 # @nithin93/sri-js
 
 [![CI](https://github.com/nithin-murali-arch/sri-js/actions/workflows/ci.yml/badge.svg)](https://github.com/nithin-murali-arch/sri-js/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@nithin93%2Fsri-js.svg)](https://www.npmjs.com/package/@nithin93/sri-js)
+[![npm version](https://img.shields.io/npm/v/@nithin93%2Fsri-js)](https://www.npmjs.com/package/@nithin93/sri-js)
+[![npm downloads](https://img.shields.io/npm/dm/@nithin93%2Fsri-js)](https://www.npmjs.com/package/@nithin93/sri-js)
+[![license](https://img.shields.io/npm/l/@nithin93%2Fsri-js)](https://github.com/nithin-murali-arch/sri-js/blob/main/LICENSE)
+[![types](https://img.shields.io/npm/types/@nithin93%2Fsri-js)](https://www.npmjs.com/package/@nithin93/sri-js)
+[![node](https://img.shields.io/node/v/@nithin93%2Fsri-js)](https://www.npmjs.com/package/@nithin93/sri-js)
 
 `@nithin93/sri-js` is a Subresource Integrity (SRI) library for Node.js build scripts and browsers that adds `integrity` attributes to `<script>` tags in HTML and to scripts your page creates at runtime with `document.createElement`. The browser bundle is 851 bytes minified and 501 bytes gzipped. The Node side also generates sha256, sha384 and sha512 hashes for files.
 
