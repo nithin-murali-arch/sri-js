@@ -141,6 +141,10 @@ const html = updateHTML(page, hashes, undefined, 'onSriFail');
 
 The [checkout receiver and browser check](examples/checkout-page/) demonstrate the complete request. Script error events also cover network and other loading failures, so treat the report as a script load failure rather than proof of an integrity mismatch. A beacon is best effort. Avoid putting secrets in script URLs or reports. The handler name must be trusted source code. A CSP that blocks inline event handlers also blocks this `onerror` approach. Adapt the reporting mechanism to your policy.
 
+### Audit final build output
+
+The [build-output audit CLI](examples/sri-audit/) checks static executable external scripts against their final local bytes. It resolves complete paths under a deployment URL, reports stable JSON and text, and includes packed-package Vite, webpack SRI, and Chromium verification. Remote scripts remain explicitly unverified. Module graphs and runtime-created scripts are outside its coverage.
+
 ### Fail CI when a script has no integrity
 
 Copy [scripts/check-sri.mjs](scripts/check-sri.mjs) into your project and install `cheerio`. Run the check after your build and SRI postbuild step:
