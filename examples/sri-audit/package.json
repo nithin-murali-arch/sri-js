@@ -1,0 +1,37 @@
+{
+  "name": "sri-output-audit-example",
+  "version": "0.1.0",
+  "description": "Audit executable script integrity in a static build output directory.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "bin": {
+    "sri-audit": "./cli.mjs"
+  },
+  "exports": "./audit.mjs",
+  "files": [
+    "audit.mjs",
+    "cli.mjs",
+    "report.mjs",
+    "README.md",
+    "schema.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "verify": "node verify.mjs"
+  },
+  "dependencies": {
+    "parse5": "7.3.0"
+  },
+  "devDependencies": {
+    "vite": "6.4.4",
+    "webpack": "5.111.1",
+    "webpack-subresource-integrity": "5.1.0",
+    "html-webpack-plugin": "5.6.8",
+    "playwright": "1.64.1"
+  },
+  "private": true
+}
