@@ -1,0 +1,12 @@
+{
+  "name": "sri-hugo-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "hugo --destination dist && node postbuild.mjs"
+  },
+  "dependencies": {
+    "@nithin93/sri-js": "^1.2.6",
+    "hugo-bin": "^0.166.0"
+  }
+}

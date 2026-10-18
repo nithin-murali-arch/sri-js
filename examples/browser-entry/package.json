@@ -2,7 +2,16 @@
   "name": "sri-browser-entry-example",
   "private": true,
   "type": "module",
-  "scripts": { "build": "tsc --noEmit && vite build && node check-size.mjs" },
-  "dependencies": { "@nithin93/sri-js": "^1.2.6" },
-  "devDependencies": { "vite": "^6.4.1", "typescript": "^5.9.3" }
+  "scripts": {
+    "build": "tsc --noEmit && vite build && node check-size.mjs",
+    "test": "npm run build && node verify.mjs"
+  },
+  "dependencies": {
+    "@nithin93/sri-js": "^1.2.6"
+  },
+  "devDependencies": {
+    "vite": "^6.4.1",
+    "typescript": "^5.9.3",
+    "playwright": "^1.58.2"
+  }
 }

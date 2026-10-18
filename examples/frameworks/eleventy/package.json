@@ -1,0 +1,11 @@
+{
+  "name": "sri-eleventy-example",
+  "private": true,
+  "scripts": {
+    "build": "eleventy && node postbuild.mjs"
+  },
+  "dependencies": {
+    "@11ty/eleventy": "^3.0.0",
+    "@nithin93/sri-js": "^1.2.6"
+  }
+}

@@ -1,0 +1,1 @@
+# Fastify SRI example. Install dependencies and the packed library with `npm install /absolute/path/to/nithin93-sri-js-1.2.6.tgz`, then run `npm start`. The `onSend` hook adds generated SHA-384 integrity to HTML responses.
