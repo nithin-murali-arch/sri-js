@@ -97,7 +97,23 @@ The bundle does not cover:
 
 You can also install the package and serve `node_modules/@nithin93/sri-js/public/sri-js.js` yourself. The path `@nithin93/sri-js/sri-js.js` resolves to the same file.
 
-In a browser, load the bundle instead of importing the package. The package entry point imports `node:crypto` and `node:fs/promises`.
+### Import the browser-only entry in a bundler
+
+Use the browser subpath for Vite and other browser bundlers:
+
+```ts
+import { enforceScriptIntegrity, type SRIConfig } from '@nithin93/sri-js/browser';
+
+const hashes: SRIConfig = { 'app.js': 'sha384-replace-with-your-build-hash' };
+enforceScriptIntegrity(hashes, '/assets/');
+const script = document.createElement('script');
+script.src = '/assets/app.js';
+document.head.appendChild(script);
+```
+
+Replace the placeholder with a hash generated from the deployed file. This entry exports only `enforceScriptIntegrity` at runtime and imports neither cheerio nor Node modules. It has the same once-per-page behavior and `src` assignment limits as the script bundle. The [packed-package Vite consumer](examples/browser-entry/) checks TypeScript resolution and requires the emitted JavaScript to stay below 2 kB gzipped. Its verified build emitted 940 bytes gzipped with Vite 6.4.4.
+
+The root package entry imports `node:crypto` and `node:fs/promises`. Use the browser subpath or the script bundle in browser code.
 
 ## API
 
