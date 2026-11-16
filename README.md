@@ -6,6 +6,7 @@
 [![license](https://img.shields.io/npm/l/@nithin93%2Fsri-js)](https://github.com/nithin-murali-arch/sri-js/blob/main/LICENSE)
 [![types](https://img.shields.io/npm/types/@nithin93%2Fsri-js)](https://www.npmjs.com/package/@nithin93/sri-js)
 [![node](https://img.shields.io/node/v/@nithin93%2Fsri-js)](https://www.npmjs.com/package/@nithin93/sri-js)
+[![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors)](https://github.com/sponsors/nithin-murali-arch)
 
 `@nithin93/sri-js` is a Subresource Integrity (SRI) library for Node.js build scripts and browsers that adds `integrity` attributes to `<script>` tags in HTML and to scripts your page creates at runtime with `document.createElement`. The browser bundle is 851 bytes minified and 501 bytes gzipped. The Node side also generates sha256, sha384 and sha512 hashes for files.
 
@@ -350,6 +351,10 @@ See [CHANGELOG.md](https://github.com/nithin-murali-arch/sri-js/blob/main/CHANGE
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Sponsor
+
+If this package saves you time, you can support its maintenance through [GitHub Sponsors](https://github.com/sponsors/nithin-murali-arch).
 
 ## License
 
